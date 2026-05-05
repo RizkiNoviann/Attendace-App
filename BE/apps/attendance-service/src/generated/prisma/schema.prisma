@@ -1,0 +1,21 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("ATTENDANCE_DATABASE_URL")
+}
+
+model Attendance {
+  id             Int      @id @default(autoincrement())
+  employeeName   String
+  division       String
+  checkInTime    String
+  imageUrl       String?
+  attendanceDate DateTime @db.Date
+  createdAt      DateTime @default(now())
+
+  @@index([attendanceDate])
+}

@@ -46,24 +46,21 @@ export default function LoginPage({ onLoginSuccess }) {
                 Akun user dibuat oleh admin dari halaman account management.
               </p>
             </div>
-            <div className="rounded-xl border border-white/25 bg-white/10 p-4 text-sm">
-              <p className="font-semibold">Akun test:</p>
-              <div className="mt-3 space-y-1 text-red-100">
-                <p>User: user@gmail.com / user123</p>
-                <p>Admin: admindexa@gmail.com / admindexa123</p>
-              </div>
-            </div>
           </section>
 
           <section className="p-6 sm:p-8">
-            <h2 className="text-xl font-bold text-slate-900 sm:text-2xl">Login</h2>
+            <h2 className="text-xl font-bold text-slate-900 sm:text-2xl">
+              Login
+            </h2>
             <p className="mt-1 text-sm text-slate-500">
               Masukkan email dan password akun yang sudah dibuat admin.
             </p>
 
             <form onSubmit={handleSubmit} className="mt-6 space-y-4">
               <label className="block space-y-2">
-                <span className="text-sm font-medium text-slate-700">Email</span>
+                <span className="text-sm font-medium text-slate-700">
+                  Email
+                </span>
                 <input
                   type="email"
                   required
@@ -74,7 +71,7 @@ export default function LoginPage({ onLoginSuccess }) {
                       email: event.target.value,
                     }))
                   }
-                  placeholder="nama@email.com"
+                  placeholder="Masukan Email"
                   className="w-full rounded-lg border border-slate-200 px-4 py-3 text-sm outline-none transition focus:border-red-400 focus:ring-2 focus:ring-red-100"
                 />
               </label>
@@ -93,7 +90,7 @@ export default function LoginPage({ onLoginSuccess }) {
                       password: event.target.value,
                     }))
                   }
-                  placeholder="********"
+                  placeholder="Masukan Password"
                   className="w-full rounded-lg border border-slate-200 px-4 py-3 text-sm outline-none transition focus:border-red-400 focus:ring-2 focus:ring-red-100"
                 />
               </label>

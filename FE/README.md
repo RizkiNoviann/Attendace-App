@@ -1,16 +1,32 @@
-# React + Vite
+# Attendance App Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Frontend menggunakan React + Tailwind.
 
-Currently, two official plugins are available:
+## Setup
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+1. Copy `.env.example` ke `.env`
+2. Pastikan backend service sudah jalan:
+   - auth-service: `http://localhost:3001`
+   - employee-service: `http://localhost:3002`
+   - attendance-service: `http://localhost:3003`
+3. Install dan jalankan:
 
-## React Compiler
+```bash
+npm install
+npm run dev
+```
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Hooks API
 
-## Expanding the ESLint configuration
+Struktur hook API:
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+- `src/hooks/useApi.jsx` → parent CRUD helper
+- `src/hooks/useAuth.jsx` → login, logout, profile
+- `src/hooks/useEmployee.jsx` → list/tambah/ubah/hapus akun
+- `src/hooks/useAttendance.jsx` → list dan submit absen (support upload image)
+
+## Popup komponen
+
+- `src/components/Popup.jsx` dipakai untuk:
+  - notifikasi sukses (absen, tambah akun, ubah akun, hapus akun)
+  - konfirmasi logout

@@ -1,11 +1,11 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 
 function createInitialForm(data) {
   return {
     presence: data?.presence ?? "Hadir",
-    uploadedImageName: data?.uploadedImageName ?? "",
-    capturedImageName: data?.capturedImageName ?? "",
-    capturedImageDataUrl: data?.capturedImageDataUrl ?? "",
+    imagePreviewUrl: data?.imagePreviewUrl ?? data?.imageUrl ?? "",
+    imageFileName: data?.imageFileName ?? "",
+    uploadFile: null,
   }
 }
 
@@ -24,6 +24,15 @@ function formatDateLabel(date) {
   return value.charAt(0).toUpperCase() + value.slice(1)
 }
 
+function fileToDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(reader.result ?? "")
+    reader.onerror = () => reject(new Error("Gagal membaca file image."))
+    reader.readAsDataURL(file)
+  })
+}
+
 export default function AttendanceModal({
   isOpen,
   date,
@@ -32,29 +41,18 @@ export default function AttendanceModal({
   onSave,
 }) {
   const [form, setForm] = useState(createInitialForm(initialData))
-  const [isCameraOpen, setIsCameraOpen] = useState(false)
-  const [cameraError, setCameraError] = useState("")
-
-  const videoRef = useRef(null)
-  const streamRef = useRef(null)
-
-  const stopCamera = useCallback(() => {
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach((track) => track.stop())
-      streamRef.current = null
-    }
-    setIsCameraOpen(false)
-  }, [])
+  const [submitError, setSubmitError] = useState("")
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   useEffect(() => {
     if (!isOpen) {
-      stopCamera()
       return
     }
 
     setForm(createInitialForm(initialData))
-    setCameraError("")
-  }, [isOpen, initialData, stopCamera])
+    setSubmitError("")
+    setIsSubmitting(false)
+  }, [isOpen, initialData])
 
   useEffect(() => {
     if (!isOpen) {
@@ -62,19 +60,14 @@ export default function AttendanceModal({
     }
 
     const handleKeyDown = (event) => {
-      if (event.key === "Escape") {
-        stopCamera()
+      if (event.key === "Escape" && !isSubmitting) {
         onClose()
       }
     }
 
     document.addEventListener("keydown", handleKeyDown)
     return () => document.removeEventListener("keydown", handleKeyDown)
-  }, [isOpen, onClose, stopCamera])
-
-  useEffect(() => {
-    return () => stopCamera()
-  }, [stopCamera])
+  }, [isOpen, isSubmitting, onClose])
 
   const dateLabel = useMemo(() => formatDateLabel(date), [date])
 
@@ -83,81 +76,50 @@ export default function AttendanceModal({
   }
 
   const handleClose = () => {
-    stopCamera()
+    if (isSubmitting) {
+      return
+    }
     onClose()
   }
 
-  const handleOpenCamera = async () => {
-    if (!navigator.mediaDevices?.getUserMedia) {
-      setCameraError("Browser tidak mendukung akses kamera langsung.")
+  const handleUploadImage = async (event) => {
+    const file = event.target.files?.[0]
+    if (!file) {
       return
     }
 
     try {
-      stopCamera()
-
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: { ideal: "environment" } },
-        audio: false,
-      })
-
-      streamRef.current = stream
-
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream
-        await videoRef.current.play()
-      }
-
-      setCameraError("")
-      setIsCameraOpen(true)
+      const previewUrl = await fileToDataUrl(file)
+      setForm((previous) => ({
+        ...previous,
+        imagePreviewUrl: previewUrl,
+        imageFileName: file.name,
+        uploadFile: file,
+      }))
     } catch {
-      setCameraError(
-        "Kamera tidak bisa dibuka. Pastikan izin kamera aktif dan akses menggunakan HTTPS atau localhost.",
-      )
+      setSubmitError("Gagal memproses file image.")
     }
   }
 
-  const handleCapturePhoto = () => {
-    const videoElement = videoRef.current
-    if (!videoElement || !videoElement.videoWidth || !videoElement.videoHeight) {
-      setCameraError("Gagal mengambil foto. Coba buka kamera lagi.")
-      return
-    }
-
-    const canvas = document.createElement("canvas")
-    canvas.width = videoElement.videoWidth
-    canvas.height = videoElement.videoHeight
-
-    const context = canvas.getContext("2d")
-    if (!context) {
-      setCameraError("Gagal memproses hasil foto.")
-      return
-    }
-
-    context.drawImage(videoElement, 0, 0, canvas.width, canvas.height)
-    const imageDataUrl = canvas.toDataURL("image/jpeg", 0.9)
-    const imageName = `capture-${Date.now()}.jpg`
-
-    setForm((previous) => ({
-      ...previous,
-      capturedImageName: imageName,
-      capturedImageDataUrl: imageDataUrl,
-    }))
-
-    setCameraError("")
-    stopCamera()
-  }
-
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault()
-    stopCamera()
+    setSubmitError("")
+    setIsSubmitting(true)
 
-    onSave({
-      presence: "Hadir",
-      uploadedImageName: form.uploadedImageName,
-      capturedImageName: form.capturedImageName,
-      capturedImageDataUrl: form.capturedImageDataUrl,
-    })
+    try {
+      await onSave({
+        presence: "Hadir",
+        imageFile: form.uploadFile ?? null,
+        imageFileName: form.imageFileName,
+        imagePreviewUrl: form.imagePreviewUrl,
+      })
+    } catch (error) {
+      setSubmitError(
+        error instanceof Error ? error.message : "Gagal menyimpan data absen.",
+      )
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -202,84 +164,23 @@ export default function AttendanceModal({
               id="upload-image"
               type="file"
               accept="image/*"
-              onChange={(event) =>
-                setForm((previous) => ({
-                  ...previous,
-                  uploadedImageName: event.target.files?.[0]?.name ?? "",
-                }))
-              }
+              onChange={handleUploadImage}
               className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700 file:mr-3 file:rounded-md file:border-0 file:bg-slate-100 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-slate-700 hover:file:bg-slate-200"
             />
-            {form.uploadedImageName && (
+            {form.uploadFile && (
               <p className="text-xs text-slate-500">
-                File dipilih: {form.uploadedImageName}
+                File dipilih: {form.imageFileName}
               </p>
             )}
-          </div>
-
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-base font-medium text-slate-900">
-                Ambil foto secara langsung (opsional)
-              </span>
-              <button
-                type="button"
-                onClick={handleOpenCamera}
-                className="rounded-md border border-slate-300 px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-100"
-              >
-                Buka Kamera
-              </button>
-            </div>
-
-            {isCameraOpen && (
-              <div className="overflow-hidden rounded-lg border border-slate-300 bg-slate-900">
-                <video
-                  ref={videoRef}
-                  autoPlay
-                  playsInline
-                  muted
-                  className="max-h-72 w-full object-cover"
-                />
-                <div className="flex items-center justify-end gap-2 border-t border-slate-700 bg-slate-900 p-3">
-                  <button
-                    type="button"
-                    onClick={stopCamera}
-                    className="rounded-md border border-slate-500 px-3 py-1.5 text-sm font-semibold text-slate-100 hover:bg-slate-800"
-                  >
-                    Tutup Kamera
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleCapturePhoto}
-                    className="rounded-md bg-red-700 px-3 py-1.5 text-sm font-semibold text-white hover:bg-red-800"
-                  >
-                    Ambil Foto
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {form.capturedImageDataUrl && !isCameraOpen && (
+            {form.imagePreviewUrl && (
               <div className="rounded-lg border border-slate-300 p-3">
                 <img
-                  src={form.capturedImageDataUrl}
-                  alt="Hasil foto"
+                  src={form.imagePreviewUrl}
+                  alt="Preview image absen"
                   className="max-h-56 w-full rounded-md object-cover"
                 />
-                <div className="mt-2 flex items-center justify-between gap-2">
-                  <p className="text-xs text-slate-500">{form.capturedImageName}</p>
-                  <button
-                    type="button"
-                    onClick={handleOpenCamera}
-                    className="rounded-md border border-slate-300 px-3 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-100"
-                  >
-                    Ambil Ulang
-                  </button>
-                </div>
               </div>
             )}
-
-            {cameraError && <p className="text-xs text-red-600">{cameraError}</p>}
           </div>
 
           <div className="space-y-2">
@@ -304,19 +205,27 @@ export default function AttendanceModal({
             </label>
           </div>
 
+          {submitError && (
+            <p className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+              {submitError}
+            </p>
+          )}
+
           <div className="flex flex-col-reverse gap-3 border-t border-slate-200 pt-4 sm:flex-row sm:justify-end">
             <button
               type="button"
               onClick={handleClose}
-              className="rounded-md border border-slate-300 px-5 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-100"
+              disabled={isSubmitting}
+              className="rounded-md border border-slate-300 px-5 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-70"
             >
               Batal
             </button>
             <button
               type="submit"
-              className="rounded-md bg-red-700 px-5 py-2.5 text-sm font-semibold text-white hover:bg-red-800"
+              disabled={isSubmitting}
+              className="rounded-md bg-red-700 px-5 py-2.5 text-sm font-semibold text-white hover:bg-red-800 disabled:cursor-not-allowed disabled:opacity-70"
             >
-              Simpan Absen
+              {isSubmitting ? "Menyimpan..." : "Simpan Absen"}
             </button>
           </div>
         </form>

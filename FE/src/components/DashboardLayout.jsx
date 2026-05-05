@@ -7,6 +7,7 @@ export default function DashboardLayout({
   links,
   currentPath,
   navigate,
+  onLogout,
   children,
 }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
@@ -32,6 +33,7 @@ export default function DashboardLayout({
         navigate={navigate}
         isOpen={isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}
+        onLogout={onLogout}
       />
 
       <div className="flex min-h-screen flex-col lg:pl-72">

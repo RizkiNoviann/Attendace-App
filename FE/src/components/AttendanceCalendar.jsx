@@ -55,6 +55,8 @@ export default function AttendanceCalendar({
   records,
   selectedDate,
   onDateClick,
+  showStatus = true,
+  title = "Kalender Laporan Harian",
 }) {
   const [currentMonth, setCurrentMonth] = useState(() => {
     const today = new Date()
@@ -87,7 +89,7 @@ export default function AttendanceCalendar({
   return (
     <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
       <h2 className="text-xl font-semibold text-slate-900">
-        Kalender Laporan Harian
+        {title}
       </h2>
 
       <div className="mt-6 flex items-center justify-center gap-3">
@@ -161,19 +163,21 @@ export default function AttendanceCalendar({
                     >
                       {date.getDate()}
                     </span>
-                    {record && (
+                    {showStatus && record && (
                       <span className="rounded-md bg-slate-900 px-1.5 py-0.5 text-[10px] font-semibold text-white">
                         Isi
                       </span>
                     )}
                   </div>
 
-                  <div className="mt-2 flex items-center gap-2 text-xs text-slate-500">
-                    <span
-                      className={`inline-block h-3 w-3 rounded-full ${statusDotClass(record)}`}
-                    />
-                    <span>{record ? record.presence : "Belum"}</span>
-                  </div>
+                  {showStatus && (
+                    <div className="mt-2 flex items-center gap-2 text-xs text-slate-500">
+                      <span
+                        className={`inline-block h-3 w-3 rounded-full ${statusDotClass(record)}`}
+                      />
+                      <span>{record ? record.presence : "Belum"}</span>
+                    </div>
+                  )}
                 </button>
               )
             })}

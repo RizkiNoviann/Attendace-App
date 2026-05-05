@@ -20,6 +20,7 @@ export default function AdminAttendanceListModal({
   isOpen,
   date,
   attendances,
+  isLoading,
   onClose,
 }) {
   const dateLabel = useMemo(() => toDateLabel(date), [date])
@@ -56,7 +57,11 @@ export default function AdminAttendanceListModal({
         </header>
 
         <div className="max-h-[70vh] overflow-y-auto p-5 sm:p-6">
-          {attendances.length === 0 ? (
+          {isLoading ? (
+            <p className="rounded-lg border border-dashed border-slate-300 p-4 text-sm text-slate-500">
+              Memuat daftar absen...
+            </p>
+          ) : attendances.length === 0 ? (
             <p className="rounded-lg border border-dashed border-slate-300 p-4 text-sm text-slate-500">
               Belum ada user yang absen pada tanggal ini.
             </p>

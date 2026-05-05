@@ -1,9 +1,33 @@
-import AppLink from "../../../components/AppLink"
+import { useState } from "react"
+import useAuth from "../../../hooks/useAuth"
 
-export default function LoginPage({ navigate }) {
-  const handleSubmit = (event) => {
+export default function LoginPage({ onLoginSuccess }) {
+  const { login } = useAuth()
+
+  const [form, setForm] = useState({
+    email: "",
+    password: "",
+  })
+  const [error, setError] = useState("")
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  const handleSubmit = async (event) => {
     event.preventDefault()
-    navigate("/user/dashboard")
+    setError("")
+    setIsSubmitting(true)
+
+    try {
+      const response = await login(form)
+      onLoginSuccess?.(response)
+    } catch (requestError) {
+      setError(
+        requestError instanceof Error
+          ? requestError.message
+          : "Login gagal. Coba lagi.",
+      )
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -19,46 +43,37 @@ export default function LoginPage({ navigate }) {
                 Selamat datang, silakan login untuk lanjut ke dashboard.
               </h1>
               <p className="mt-3 text-sm text-red-100 sm:text-base">
-                Entry awal aplikasi diarahkan ke halaman login sesuai kebutuhan.
+                Akun user dibuat oleh admin dari halaman account management.
               </p>
             </div>
             <div className="rounded-xl border border-white/25 bg-white/10 p-4 text-sm">
-              <p className="font-semibold">Demo akses cepat:</p>
-              <div className="mt-3 flex flex-wrap gap-2">
-                <AppLink
-                  to="/user/dashboard"
-                  navigate={navigate}
-                  className="rounded-md bg-white px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-50"
-                >
-                  User Dashboard
-                </AppLink>
-                <AppLink
-                  to="/admin/dashboard"
-                  navigate={navigate}
-                  className="rounded-md border border-white/60 px-3 py-2 text-xs font-semibold hover:bg-white/10"
-                >
-                  Admin Dashboard
-                </AppLink>
+              <p className="font-semibold">Akun test:</p>
+              <div className="mt-3 space-y-1 text-red-100">
+                <p>User: user@gmail.com / user123</p>
+                <p>Admin: admindexa@gmail.com / admindexa123</p>
               </div>
             </div>
           </section>
 
           <section className="p-6 sm:p-8">
-            <h2 className="text-xl font-bold text-slate-900 sm:text-2xl">
-              Login
-            </h2>
+            <h2 className="text-xl font-bold text-slate-900 sm:text-2xl">Login</h2>
             <p className="mt-1 text-sm text-slate-500">
-              Masukkan akun untuk masuk ke halaman user atau admin.
+              Masukkan email dan password akun yang sudah dibuat admin.
             </p>
 
             <form onSubmit={handleSubmit} className="mt-6 space-y-4">
               <label className="block space-y-2">
-                <span className="text-sm font-medium text-slate-700">
-                  Email
-                </span>
+                <span className="text-sm font-medium text-slate-700">Email</span>
                 <input
                   type="email"
                   required
+                  value={form.email}
+                  onChange={(event) =>
+                    setForm((previous) => ({
+                      ...previous,
+                      email: event.target.value,
+                    }))
+                  }
                   placeholder="nama@email.com"
                   className="w-full rounded-lg border border-slate-200 px-4 py-3 text-sm outline-none transition focus:border-red-400 focus:ring-2 focus:ring-red-100"
                 />
@@ -71,16 +86,30 @@ export default function LoginPage({ navigate }) {
                 <input
                   type="password"
                   required
+                  value={form.password}
+                  onChange={(event) =>
+                    setForm((previous) => ({
+                      ...previous,
+                      password: event.target.value,
+                    }))
+                  }
                   placeholder="********"
                   className="w-full rounded-lg border border-slate-200 px-4 py-3 text-sm outline-none transition focus:border-red-400 focus:ring-2 focus:ring-red-100"
                 />
               </label>
 
+              {error && (
+                <p className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                  {error}
+                </p>
+              )}
+
               <button
                 type="submit"
-                className="w-full rounded-lg bg-red-700 px-4 py-3 text-sm font-semibold text-white transition hover:bg-red-800"
+                disabled={isSubmitting}
+                className="w-full rounded-lg bg-red-700 px-4 py-3 text-sm font-semibold text-white transition hover:bg-red-800 disabled:cursor-not-allowed disabled:opacity-70"
               >
-                Login
+                {isSubmitting ? "Memproses..." : "Login"}
               </button>
             </form>
           </section>
